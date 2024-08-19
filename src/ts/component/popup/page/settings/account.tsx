@@ -92,7 +92,7 @@ const PopupSettingsPageAccount = observer(class PopupSettingsPageAccount extends
 
 					<div className="inputWrapper withIcon">
 						<Input
-							value={account.ethAddress}
+							value={account.info.ethereumAddress}
 							readonly={true}
 							onClick={() => U.Common.copyToast(translate('popupSettingsAccountAnytypeIdentityTitle'), account.id)}
 						/>

@@ -23,6 +23,7 @@ export interface AccountInfo {
 	widgetsId: string;
 	analyticsId: string;
 	networkId: string;
+	ethereumAddress: string;
 };
 
 export interface AccountConfig {
