@@ -21,9 +21,14 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 	cache: any = null;
 	top = 0;
 	refInput = null;
+	refInput2 = null;
+	tokenAddressInput = null;
 	refList: any = null;
 	refCopy: any = null;
 	refButton: any = null;
+	refButton2 = null
+
+	tokenAddr = "";
 
 	state = {
 		isLoading: false,
@@ -203,6 +208,29 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 					)}
 				</div>
 
+				<div id="sectionInviteTG" className="section sectionInviteTG">
+					<div className="inviteLinkWrapper">
+						<div className="inputWrapper">
+							<Input 
+								ref={ref => this.refInput2 = ref} 
+								readonly={false} 
+								placeholder={"NFT token address: 0x..."} 
+								value={this.tokenAddr}
+							/>
+						</div>
+					</div>
+
+					<div className="buttons">
+						<Button 
+							ref={ref => this.refButton2 = ref} 
+							onClick={isShareActive ? () => this.onInitLinkTG() : null} 
+							className={[ 'c40', (isShareActive ? '' : 'disabled') ].join(' ')} 
+							tooltip={isShareActive ? '' : translate('popupSettingsSpaceShareGenerateInviteDisabled')}
+							text={"Generate invite link (token-gated)"} 
+						/>
+					</div>
+				</div>
+
 				<div id="sectionMembers" className="section sectionMembers">
 					<Title text={translate('popupSettingsSpaceShareMembersTitle')} />
 
@@ -347,6 +375,35 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 				};
 			});
 		});
+	};
+
+	isValidEthereumAddress(address) {
+		// Check if the address starts with '0x' and is 42 characters long
+		if (typeof address !== 'string' || address.length !== 42 || !address.startsWith('0x')) {
+			return false;
+		}
+	
+		// Check if all characters after '0x' are valid hexadecimal characters
+		const hexPart = address.slice(2);
+		const hexRegex = /^[0-9a-fA-F]{40}$/;
+		if (!hexRegex.test(hexPart)) {
+			return false;
+		}
+	
+		return true;
+	}
+
+	onInitLinkTG () {
+		this.setState({ error: "" });
+
+		const tokenAddress = this.refInput2?.getValue();
+		console.log("Token address: ", tokenAddress);
+
+		// 1 - check if the token address is valid (Ethereum address)
+		if (!this.isValidEthereumAddress(tokenAddress)) {
+			this.setError({ description: "Invalid Ethereum address", code: 1 });
+			return;
+		}
 	};
 
 	onStopSharing () {

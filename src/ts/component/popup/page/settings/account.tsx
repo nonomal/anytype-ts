@@ -86,6 +86,19 @@ const PopupSettingsPageAccount = observer(class PopupSettingsPageAccount extends
 						<Icon className="copy" />
 					</div>
 				</div>
+
+				<div className="section">
+					<Title text={"Ethereum Address"} />
+
+					<div className="inputWrapper withIcon">
+						<Input
+							value={account.ethAddress}
+							readonly={true}
+							onClick={() => U.Common.copyToast(translate('popupSettingsAccountAnytypeIdentityTitle'), account.id)}
+						/>
+						<Icon className="copy" />
+					</div>
+				</div>
 			</div>
 		);
 	};
