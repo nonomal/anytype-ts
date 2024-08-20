@@ -178,6 +178,23 @@ const PopupSettingsSpaceIndex = observer(class PopupSettingsSpaceIndex extends R
 								</div>
 							) : ''}
 
+							{canShare && !space.isShared ? (
+								<div 
+									className={[ 'item', (isShareActive ? '' : 'disabled') ].join(' ')} 
+									onClick={() => isShareActive ? onPage('spaceShareTG') : null}
+								>
+									<div className="sides">
+										<div className="side left">
+											<Title text={"Share space with NFT token gating"} />
+											<Label text={"Allow only particular NFT owners to join"} />
+										</div>
+										<div className="side right">
+											<Icon className="arrow" />
+										</div>
+									</div>
+								</div>
+							) : ''}
+
 							{hasLink ? (
 								<div className="item isInvite">
 									<div className="sides">

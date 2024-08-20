@@ -54,7 +54,7 @@ const PopupInviteRequest = observer(class PopupInviteRequest extends React.Compo
 		const { param, close } = this.props;
 		const { account } = S.Auth;
 		const { data } = param;
-		const { invite, cid, key } = data;
+		const { invite, cid, key, nftTokenAddr } = data;
 
 		if (!account || this.refButton.state.isLoading) {
 			return;
@@ -62,7 +62,9 @@ const PopupInviteRequest = observer(class PopupInviteRequest extends React.Compo
 
 		this.refButton?.setLoading(true);
 
-		C.SpaceJoin(account.info.networkId, invite.spaceId, cid, key, (message: any) => {
+		console.log("--->>> POPUP INVITE REQUEST: ", nftTokenAddr);
+		
+		C.SpaceJoin(account.info.networkId, invite.spaceId, cid, key, nftTokenAddr, (message: any) => {
 			this.refButton?.setLoading(false);
 
 			if (message.error.code) {

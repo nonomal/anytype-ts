@@ -26,9 +26,6 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 	refList: any = null;
 	refCopy: any = null;
 	refButton: any = null;
-	refButton2 = null
-
-	tokenAddr = "";
 
 	state = {
 		isLoading: false,
@@ -190,7 +187,7 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 					{hasLink ? (
 						<div className="inviteLinkWrapper">
 							<div className="inputWrapper">
-								<Input ref={ref => this.refInput = ref} readonly={true} value={U.Space.getInviteLink(cid, key)} onClick={() => this.refInput?.select()} />
+								<Input ref={ref => this.refInput = ref} readonly={true} value={U.Space.getInviteLink(cid, key, "")} onClick={() => this.refInput?.select()} />
 								<Icon id="button-more-link" className="more" onClick={this.onMoreLink} />
 							</div>
 							<Button ref={ref => this.refCopy = ref} onClick={this.onCopy} className="c40" color="blank" text={translate('commonCopyLink')} />
@@ -206,29 +203,6 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 							/>
 						</div>
 					)}
-				</div>
-
-				<div id="sectionInviteTG" className="section sectionInviteTG">
-					<div className="inviteLinkWrapper">
-						<div className="inputWrapper">
-							<Input 
-								ref={ref => this.refInput2 = ref} 
-								readonly={false} 
-								placeholder={"NFT token address: 0x..."} 
-								value={this.tokenAddr}
-							/>
-						</div>
-					</div>
-
-					<div className="buttons">
-						<Button 
-							ref={ref => this.refButton2 = ref} 
-							onClick={isShareActive ? () => this.onInitLinkTG() : null} 
-							className={[ 'c40', (isShareActive ? '' : 'disabled') ].join(' ')} 
-							tooltip={isShareActive ? '' : translate('popupSettingsSpaceShareGenerateInviteDisabled')}
-							text={"Generate invite link (token-gated)"} 
-						/>
-					</div>
 				</div>
 
 				<div id="sectionMembers" className="section sectionMembers">
@@ -351,7 +325,7 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 			return;
 		};
 
-		U.Common.copyToast('', U.Space.getInviteLink(cid, key), translate('toastInviteCopy'));
+		U.Common.copyToast('', U.Space.getInviteLink(cid, key, ""), translate('toastInviteCopy'));
 		analytics.event('ClickShareSpaceCopyLink');
 	};
 
@@ -391,19 +365,6 @@ const PopupSettingsSpaceShare = observer(class PopupSettingsSpaceShare extends R
 		}
 	
 		return true;
-	}
-
-	onInitLinkTG () {
-		this.setState({ error: "" });
-
-		const tokenAddress = this.refInput2?.getValue();
-		console.log("Token address: ", tokenAddress);
-
-		// 1 - check if the token address is valid (Ethereum address)
-		if (!this.isValidEthereumAddress(tokenAddress)) {
-			this.setError({ description: "Invalid Ethereum address", code: 1 });
-			return;
-		}
 	};
 
 	onStopSharing () {

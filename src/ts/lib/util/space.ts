@@ -159,8 +159,12 @@ class UtilSpace {
 		return space.writersLimit - participants.length;
 	};
 
-	getInviteLink (cid: string, key: string) {
-		return U.Data.isAnytypeNetwork() ? U.Common.sprintf(J.Url.invite, cid, key) : `${J.Constant.protocol}://invite/?cid=${cid}&key=${key}`;
+	getInviteLink (cid: string, key: string, nftTokenAddr?: string) {
+		if (nftTokenAddr) {
+			return U.Data.isAnytypeNetwork() ? U.Common.sprintf(J.Url.inviteWithNftToken, cid, key, nftTokenAddr) : `${J.Constant.protocol}://invite/?cid=${cid}&key=${key}&nftTokenAddr=${nftTokenAddr}`;
+		} else {
+			return U.Data.isAnytypeNetwork() ? U.Common.sprintf(J.Url.invite, cid, key) : `${J.Constant.protocol}://invite/?cid=${cid}&key=${key}`;
+		}
 	};
 
 	canCreateSpace (): boolean {

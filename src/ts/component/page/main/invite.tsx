@@ -14,6 +14,7 @@ class PageMainInvite extends React.Component<I.PageComponent, State> {
 	cid = '';
 	key = '';
 	node = null;
+	nftTokenAddr = '';
 	refFrame = null;
 
 	render () {
@@ -64,6 +65,8 @@ class PageMainInvite extends React.Component<I.PageComponent, State> {
 
 		this.cid = data.cid;
 		this.key = data.key;
+		// optional token gating NFT
+		this.nftTokenAddr = data.nftTokenAddr;
 
 		if (!data.cid || !data.key) {
 			this.setState({ error: translate('pageMainInviteErrorData') });

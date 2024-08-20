@@ -2036,13 +2036,14 @@ export const SpaceMakeShareable = (spaceId: string, callBack?: (message: any) =>
 	dispatcher.request(SpaceMakeShareable.name, request, callBack);
 };
 
-export const SpaceJoin = (networkId: string, spaceId: string, cid: string, key: string, callBack?: (message: any) => void) => {
+export const SpaceJoin = (networkId: string, spaceId: string, cid: string, key: string, nftTokenAddr:string, callBack?: (message: any) => void) => {
 	const request = new Rpc.Space.Join.Request();
 
 	request.setNetworkid(networkId);
 	request.setSpaceid(spaceId);
 	request.setInvitecid(cid);
 	request.setInvitefilekey(key);
+	request.setNfttokenaddress(nftTokenAddr);
 
 	dispatcher.request(SpaceJoin.name, request, callBack);
 };
