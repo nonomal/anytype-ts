@@ -57,6 +57,19 @@ export const Mapper = {
 		return t;
 	},
 
+	ProcessType (v: Events.Model.Process.MessageCase) {
+		const V = Events.Model.Process.MessageCase;
+
+		let t = '';
+		if (v == V.DROPFILES)		 t = 'dropFiles';
+		if (v == V.IMPORT)			 t = 'import';
+		if (v == V.EXPORT)			 t = 'export';
+		if (v == V.SAVEFILE)		 t = 'saveFile';
+		if (v == V.MIGRATION)		 t = 'migration';
+
+		return t;
+	},
+
 	From: {
 
 		Account: (obj: Model.Account): I.Account => {
@@ -81,6 +94,7 @@ export const Mapper = {
 				widgetsId: obj.getWidgetsid(),
 				analyticsId: obj.getAnalyticsid(),
 				networkId: obj.getNetworkid(),
+				workspaceObjectId: obj.getWorkspaceobjectid(),
 			};
 		},
 
@@ -124,15 +138,15 @@ export const Mapper = {
 		},
 
 		PreviewLink: (obj: Model.LinkPreview) => {
-            return {
-                type: obj.getType(),
-                title: obj.getTitle(),
-                description: obj.getDescription(),
-                faviconUrl: obj.getFaviconurl(),
-                imageUrl: obj.getImageurl(),
-                url: obj.getUrl(),
-            };
-        },
+			return {
+				type: obj.getType(),
+				title: obj.getTitle(),
+				description: obj.getDescription(),
+				faviconUrl: obj.getFaviconurl(),
+				imageUrl: obj.getImageurl(),
+				url: obj.getUrl(),
+			};
+		},
 
 		Details: (obj: any): any => {
 			return {
@@ -334,15 +348,14 @@ export const Mapper = {
 		},
 
 		ViewRelation: (obj: Model.Block.Content.Dataview.Relation) => {
-            return {
-                relationKey: obj.getKey(),
-                isVisible: obj.getIsvisible(),
-                width: obj.getWidth(),
+			return {
+				relationKey: obj.getKey(),
+				isVisible: obj.getIsvisible(),
+				width: obj.getWidth(),
 				includeTime: obj.getDateincludetime(),
-                timeFormat: obj.getTimeformat(),
-				dateFormat: obj.getDateformat(),
-            };
-        },
+				formulaType: obj.getFormula(),
+			};
+		},
 
 		Filter: (obj: Model.Block.Content.Dataview.Filter): I.Filter => {
 			return {
@@ -376,7 +389,7 @@ export const Mapper = {
 		},
 
 		GraphEdge: (obj: Rpc.Object.Graph.Edge) => {
-            return {
+			return {
 				type: obj.getType(),
 				source: obj.getSource(),
 				target: obj.getTarget(),
@@ -385,16 +398,16 @@ export const Mapper = {
 				iconImage: obj.getIconimage(),
 				iconEmoji: obj.getIconemoji(),
 				isHidden: obj.getHidden(),
-            };
-        },
+			};
+		},
 
 		UnsplashPicture: (obj: Rpc.Unsplash.Search.Response.Picture) => {
 			return {
-                id: obj.getId(),
+				id: obj.getId(),
 				url: obj.getUrl(),
 				artist: obj.getArtist(),
 				artistUrl: obj.getArtisturl(),
-            };
+			};
 		},
 
 		ObjectView: (obj: Model.ObjectView) => {
@@ -590,11 +603,15 @@ export const Mapper = {
 		},
 
 		Process: (obj: Events.Model.Process) => {
+			const type = Mapper.ProcessType(obj.getMessageCase());
+
 			return {
 				id: obj.getId(),
 				state: obj.getState() as number,
-				type: obj.getType() as number,
-				progress: Mapper.From.Progress(obj.getProgress())
+				type,
+				spaceId: obj.getSpaceid(),
+				progress: Mapper.From.Progress(obj.getProgress()),
+				error: obj.getError(),
 			};
 		},
 
@@ -665,7 +682,7 @@ export const Mapper = {
 			return reactions;
 		},
 
-    },
+	},
 
 	//------------------------------------------------------------
 
@@ -886,8 +903,7 @@ export const Mapper = {
 			item.setIsvisible(obj.isVisible);
 			item.setWidth(obj.width);
 			item.setDateincludetime(obj.includeTime);
-			item.setTimeformat(obj.timeFormat);
-			item.setDateformat(obj.dateFormat);
+			item.setFormula(obj.formulaType);
 
 			return item;
 		},

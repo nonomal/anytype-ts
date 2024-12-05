@@ -56,7 +56,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 		this.loadMoreRows = this.loadMoreRows.bind(this);
 	};
 
-    render() {
+	render() {
 		const { isLoading } = this.state;
 		const items = this.getItems();
 		const isAllowedObject = this.isAllowedObject();
@@ -108,7 +108,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 			);
 		};
 
-        return (
+		return (
 			<div 
 				id="containerObject"
 				ref={ref => this.node = ref}
@@ -226,7 +226,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 				</div>
 			</div>
 		);
-    };
+	};
 
 	componentDidMount () {
 		this.refFilter.focus();
@@ -277,7 +277,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 
 		$(window).on('keydown.sidebarObject', e => this.onKeyDown(e));
 		$(this.node).on('click', e => {
-			if (!this.refFilter || this.refFilter.isFocused) {
+			if (!this.refFilter || this.refFilter.isFocused()) {
 				return;
 			};
 
@@ -317,6 +317,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 		const template = S.Record.getTemplateType();
 		const limit = this.offset + J.Constant.limit.menuRecords;
 		const fileLayouts = [ I.ObjectLayout.File, I.ObjectLayout.Pdf ];
+		const options = U.Menu.getObjectContainerSortOptions(this.type, this.sortId, this.sortType, this.orphan, this.compact);
 
 		let sorts: I.Sort[] = [];
 		let filters: I.Filter[] = [
@@ -378,7 +379,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 			};
 		};
 
-		if (this.orphan) {
+		if (this.orphan && options.find(it => it.id == I.SortId.Orphan)) {
 			filters = filters.concat([
 				{ relationKey: 'links', condition: I.FilterCondition.Empty, value: null },
 				{ relationKey: 'backlinks', condition: I.FilterCondition.Empty, value: null },
@@ -401,7 +402,6 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 			ignoreDeleted: true,
 		}, (message: any) => {
 			this.setState({ isLoading: false });
-
 			if (callBack) {
 				callBack(message);
 			};
@@ -485,6 +485,15 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 				subId: J.Constant.subId.allObject,
 				route: analytics.route.allObjects,
 				allowedLinkTo: true,
+				onSelect: id => {
+					switch (id) {
+						case 'archive': {
+							this.selected = null;
+							this.renderSelection();
+							break;
+						};
+					};
+				}
 			}
 		});
 	};
@@ -705,7 +714,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 	};
 
 	onKeyDown (e: any) {
-		if (!this.refFilter.isFocused) {
+		if (!this.refFilter.isFocused()) {
 			return;
 		};
 
@@ -752,7 +761,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 				e.preventDefault();
 
 				const ids = this.selected ? this.selected : [ next.id ];
-				Action.archive(ids);
+				Action.archive(ids, analytics.route.allObjects);
 			});
 		};
 	};
@@ -794,9 +803,9 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 				this.selected = this.selected.filter(it => it != item.id);
 			};
 			this.renderSelection();
-        };
+		};
 
-        const selectPrevious = () => {
+		const selectPrevious = () => {
 			if (!this.selected) {
 				return;
 			};
@@ -814,7 +823,7 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 				this.selected = this.selected.filter(it => it != item.id);
 			};
 			this.renderSelection();
-        };
+		};
 
 		const cb = () => {
 			let scrollTo = 0;
@@ -1073,8 +1082,8 @@ const SidebarObject = observer(class SidebarObject extends React.Component<{}, S
 		const max = this.getMaxWidth();
 		const sw = scroll.width();
 
-		this.x <= 0 ? sideLeft.addClass('hide') : sideLeft.removeClass('hide');
-		this.x >= max - sw - 1 ? sideRight.addClass('hide') : sideRight.removeClass('hide');
+		sideLeft.toggleClass('hide', this.x <= 0);
+		sideRight.toggleClass('hide', this.x >= max - sw - 1);
 	};
 
 	getMaxWidth () {

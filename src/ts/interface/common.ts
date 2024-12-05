@@ -123,8 +123,8 @@ export enum Usecase {
 	None		 = 0,
 	GetStarted	 = 1,
 	Personal	 = 2,
-    Knowledge	 = 3,
-    Notes		 = 4,
+	Knowledge	 = 3,
+	Notes		 = 4,
 	Strategic 	 = 5,
 	Empty		 = 6,
 };
@@ -201,9 +201,9 @@ export enum SurveyType {
 export enum SliceOperation {
 	None			 = 0,
 	Add				 = 1,
-    Move			 = 2,
+	Move			 = 2,
 	Remove			 = 3,
-    Replace			 = 4,
+	Replace			 = 4,
 };
 
 export enum FileSyncStatus {
@@ -283,4 +283,40 @@ export interface RouteParam {
 	onFadeOut: () => void;
 	onFadeIn?: () => void;
 	onRouteChange?: () => void;
+};
+
+export interface SearchSubscribeParam {
+	spaceId: string;
+	subId: string;
+	idField: string;
+	filters: I.Filter[];
+	sorts: I.Sort[];
+	keys: string[];
+	sources: string[];
+	collectionId: string;
+	afterId: string;
+	beforeId: string;
+	offset: number;
+	limit: number;
+	ignoreHidden: boolean;
+	ignoreDeleted: boolean;
+	ignoreArchived: boolean;
+	skipLayoutFormat: I.ObjectLayout[];
+	noDeps: boolean;
+};
+
+export enum SortId {
+	All			 = 'all',
+	Orphan		 = 'orphan',
+	Updated		 = 'updated',
+	Created		 = 'created',
+	Name		 = 'name',
+	LastUsed	 = 'lastUsed',
+	List		 = 'list',
+	Compact		 = 'compact',
+};
+
+export enum LoaderType {
+	Loader		 = 'loader',
+	Dots		 = 'dots',
 };

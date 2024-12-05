@@ -1,243 +1,261 @@
-import * as React from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, MouseEvent } from 'react';
 import $ from 'jquery';
-import { Icon, Drag } from 'Component';
+import { Icon, DragHorizontal, DragVertical, Floater } from 'Component';
 import { U } from 'Lib';
 
 interface PlaylistItem {
-	name: string; 
+	name: string;
 	src: string;
 };
 
 interface Props {
-    playlist: PlaylistItem[];
-    onPlay?(): void;
-    onPause?(): void;
+	playlist: PlaylistItem[];
+	onPlay?(): void;
+	onPause?(): void;
 };
 
-class MediaAudio extends React.Component<Props> {
+interface MediaAudioRefProps {
+	updatePlaylist(playlist: PlaylistItem[]): void;
+};
 
-    node: any = null;
-    volume = 0;
-    playOnSeek = false;
-    refTime: any = null;
-    refVolume: any = null;
-    current: PlaylistItem = { name: '', src: '' };
-    audioNode: HTMLAudioElement;
+const MediaAudio = forwardRef<MediaAudioRefProps, Props>(({
+	playlist = [],
+	onPlay,
+	onPause,
+}, ref) => {
 
-    constructor (props: Props) {
-        super(props);
+	const nodeRef = useRef<HTMLDivElement>(null);
+	const audioRef = useRef<HTMLAudioElement>(null);
+	const timeRef = useRef(null);
+	const timeTextRef = useRef(null);
+	const volumeIconRef = useRef(null);
+	const playIconRef = useRef(null);
+	const floaterRef = useRef(null);
+	const resizeObserver = new ResizeObserver(() => onResize());
+	const [ current, setCurrent ] = useState<PlaylistItem>(null);
+	const { src, name }	= current || {};
+	const ci = [ 'volume' ];
 
-        this.onPlayClick = this.onPlayClick.bind(this);
-        this.onMute = this.onMute.bind(this);
-    };
+	const isPlaying = useRef(false);
+	const volume = useRef(1);
+	const isMuted = useRef(false);
+	const playOnSeek = useRef(false);
 
-    render () {
-        return (
-            <div
-                ref={node => this.node = node}
-                className="wrap resizable audio mediaAudio"
-            >
-                <audio id="audio" preload="auto" src={this.current.src} />
+	const rebind = () => {
+		unbind();
 
-                <div className="controls">
-                    <Icon className="play" onClick={this.onPlayClick} />
+		const node = $(audioRef.current);
 
-                    <div className="name">
-                        <span>{this.current.name}</span>
-                    </div>
+		node.on('canplay timeupdate', () => onTimeUpdate());
+		node.on('play', () => onPlayHandler());
+		node.on('ended pause', () => onPauseHandler());
+	};
 
-                    <Drag
-                        id="time"
-                        ref={ref => this.refTime = ref}
-                        value={0}
-                        onStart={(e: any, v: number) => this.onTime(v)}
-                        onMove={(e: any, v: number) => this.onTime(v)}
-                        onEnd={(e: any, v: number) => this.onTimeEnd(v)}
-                    />
+	const unbind = () => {
+		$(audioRef.current).off('canplay timeupdate play ended pause');
+	};
 
-                    <div className="time">
-                        <span id="timeCurrent" className="current">0:00</span>&nbsp;/&nbsp;
-                        <span id="timeTotal" className="total">0:00</span>
-                    </div>
+	const resize = () => {
+		timeRef.current?.resize();
+	};
 
-                    <Icon className="volume" onClick={this.onMute} />
-                    <Drag
-                        id="volume"
-                        ref={ref => this.refVolume = ref}
-                        value={1}
-                        onMove={(e: any, v: number) => this.onVolume(v)}
-                    />
-                </div>
-            </div>
-        );
-    };
+	const onResize = () => {
+		resize();
+		rebind();
+	};
 
-    componentDidMount () {
-        const { playlist } = this.props;
-
-		if (playlist.length) {
-			this.current = playlist[0];
-		};
-
-		this.forceUpdate();
-    };
-
-    componentDidUpdate () {
-        this.resize();
-        this.rebind();
-    };
-
-    componentWillUnmount () {
-        this.unbind();
-    };
-
-    rebind () {
-        this.unbind();
-
-        const node = $(this.node);
-        const el = node.find('#audio');
-
-        this.audioNode = el.get(0) as HTMLAudioElement;
-
-        if (el.length) {
-            el.on('canplay timeupdate', () => this.onTimeUpdate());
-            el.on('play', () => this.onPlay());
-            el.on('ended pause', () => this.onPause());
-        };
-    };
-
-    unbind () {
-        const node = $(this.node);
-        const el = node.find('#audio');
-
-        if (el.length) {
-            el.off('canplay timeupdate play ended pause');
-        };
-    };
-
-    resize () {
-        if (this.refTime) {
-            this.refTime.resize();
-        };
-
-        if (this.refVolume) {
-            this.refVolume.resize();
-        };
-    };
-
-    onPlayClick (e: React.MouseEvent) {
+	const onPlayClick = (e: React.MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
 
-        const el = this.audioNode;
-        const paused = el.paused;
+		U.Common.pauseMedia();
+		isPlaying.current ? pause() : play();
+	};
 
-        U.Common.pauseMedia();
-        paused ? this.play() : this.pause();
-    };
-
-	onPlay () {
-		const { onPlay } = this.props;
-        const node = $(this.node);
-        const icon = node.find('.icon.play');
-		
-		icon.addClass('active');
+	const onPlayHandler = () => {
+		isPlaying.current = true;
+		$(playIconRef.current).addClass('active');
 
 		if (onPlay) {
 			onPlay();
 		};
 	};
 
-	onPause () {
-		const { onPause } = this.props;
-        const node = $(this.node);
-        const icon = node.find('.icon.play');
-
-		icon.removeClass('active');
+	const onPauseHandler = () => {
+		isPlaying.current = false;
+		$(playIconRef.current).removeClass('active');
 
 		if (onPause) {
 			onPause();
 		};
 	};
 
-    play () {
-        this.audioNode.play();
-    };
+	const play = () => {
+		audioRef.current.play();
+	};
 
-    pause () {
-        this.audioNode.pause();
-    };
+	const pause = () => {
+		audioRef.current.pause();
+	};
 
-    onMute (e: React.MouseEvent) {
+	const onMute = (e: MouseEvent) => {
 		e.preventDefault();
 		e.stopPropagation();
 
-        this.audioNode.volume = this.audioNode.volume ? 0 : (this.volume || 1);
-        this.refVolume.setValue(this.audioNode.volume);
-        this.setVolumeIcon();
-    };
+		isMuted.current = !isMuted.current;
+		onVolume(volume.current);
+	};
 
-    onVolume (v: number) {
-        const el = this.audioNode;
+	const onVolume = (v: number) => {
+		volume.current = v;
+		audioRef.current.volume = v * (isMuted.current ? 0 : 1);
 
-        this.volume = el.volume = v;
-        this.setVolumeIcon();
-    };
+		checkVolumeClass();
+	};
 
-    setVolumeIcon () {
-        const node = $(this.node);
-        const icon = node.find('.icon.volume');
+	const checkVolumeClass = () => {
+		$(volumeIconRef.current).toggleClass('isMuted', !(!isMuted.current && volume.current));
+	};
 
-        this.audioNode.volume ? icon.removeClass('active') : icon.addClass('active');
-    };
+	const onTime = (v: number) => {
+		const ref = audioRef.current;
+		if (!ref) {
+			return;
+		};
 
-    onTime (v: number) {
-        const paused = this.audioNode.paused;
+		if (!ref.paused) {
+			pause();
+			playOnSeek.current = true;
+		};
 
-        if (!paused) {
-            this.pause();
-            this.playOnSeek = true;
-        };
+		ref.currentTime = Number(v * ref.duration) || 0;
+	};
 
-        this.audioNode.currentTime = Number(v * this.audioNode.duration) || 0;
-    };
+	const onTimeEnd = (v: number) => {
+		if (playOnSeek.current) {
+			play();
+		};
+	};
 
-    onTimeEnd (v: number) {
-        if (this.playOnSeek) {
-            this.play();
-        };
-    };
+	const onVolumeEnter = () => {
+		floaterRef.current.show();
+	};
 
-    onTimeUpdate () {
-        const el = this.audioNode;
-        if (!el) {
-            return;
-        };
+	const onVolumeLeave = () => {
+		floaterRef.current.hide();
+	};
 
-        const node = $(this.node);
-        const current = node.find('#timeCurrent');
-        const total = node.find('#timeTotal');
+	const onTimeUpdate = () => {
+		const audio = audioRef.current;
+		const ref = timeRef.current;
 
-        let t = this.getTime(el.currentTime);
-        current.text(`${U.Common.sprintf('%02d', t.m)}:${U.Common.sprintf('%02d', t.s)}`);
+		if (!ref || !audio) {
+			return;
+		};
 
-        t = this.getTime(el.duration);
-        total.text(`${U.Common.sprintf('%02d', t.m)}:${U.Common.sprintf('%02d', t.s)}`);
+		const { m, s } = getTime(isPlaying.current ? audio.currentTime : audio.duration);
 
-        this.refTime.setValue(el.currentTime / el.duration);
-    };
+		$(timeTextRef.current).text(`${U.Common.sprintf('%02d', m)}:${U.Common.sprintf('%02d', s)}`);
+		ref.setValue(audio.currentTime / audio.duration);
+	};
 
-    getTime (t: number): { m: number, s: number } {
+	const getTime = (t: number): { m: number, s: number } => {
 		t = Number(t) || 0;
 
-        const m = Math.floor(t / 60);
+		const m = Math.floor(t / 60);
 
-        t -= m * 60;
-        const s = Math.floor(t);
+		t -= m * 60;
+		const s = Math.floor(t);
 
-        return { m, s };
-    };
+		return { m, s };
+	};
 
-};
+	useEffect(() => {
+		if (nodeRef.current) {
+			resizeObserver.observe(nodeRef.current);
+		};
+		setCurrent(playlist[0]);
+
+		return () => {
+			unbind();
+			if (nodeRef.current) {
+				resizeObserver.unobserve(nodeRef.current)
+			};
+		};
+	});
+
+	useEffect(() => {
+		resize();
+		rebind();
+	}, []);
+
+	useImperativeHandle(ref, () => ({
+		updatePlaylist: (playlist: PlaylistItem[]) => {
+			playlist = playlist || [];
+
+			if (playlist.length) {
+				setCurrent(playlist[0]);
+			};
+		},
+	}));
+
+	return (
+		<div
+			ref={nodeRef}
+			className="wrap resizable audio mediaAudio"
+		>
+			<audio ref={audioRef} preload="auto" src={src} />
+
+			<div className="controlsWrapper">
+				<div className="name">
+					<span>{name}</span>
+				</div>
+
+				<div className="controls">
+					<Icon ref={playIconRef} className="play" onClick={onPlayClick} />
+
+					<div className="timeDragWrapper">
+						<DragHorizontal
+							id="timeDrag"
+							ref={timeRef}
+							value={0}
+							onStart={(e: any, v: number) => onTime(v)}
+							onMove={(e: any, v: number) => onTime(v)}
+							onEnd={(e: any, v: number) => onTimeEnd(v)}
+						/>
+					</div>
+
+					<div className="timeText">
+						<span ref={timeTextRef} />
+					</div>
+
+					<div className="volumeWrap" onMouseLeave={onVolumeLeave}>
+						<Icon
+							ref={volumeIconRef} 
+							className={ci.join(' ')} 
+							onClick={onMute} 
+							onMouseEnter={onVolumeEnter}
+						/>
+
+						<Floater 
+							ref={floaterRef}
+							anchorEl={volumeIconRef.current}
+							offset={4}
+						>
+							<DragVertical
+								id="volume"
+								className="volume"
+								value={volume.current}
+								onChange={(e: any, v: number) => onVolume(v)}
+								onMouseEnter={onVolumeEnter}
+							/>
+						</Floater>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+
+});
 
 export default MediaAudio;

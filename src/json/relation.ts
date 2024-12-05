@@ -22,7 +22,8 @@ export default {
 		'sizeInBytes',
 		'restrictions',
 		'defaultTemplateId',
-		'createdDate'
+		'createdDate',
+		'timestamp',
 	],
 
 	sidebar: [
@@ -49,7 +50,8 @@ export default {
 		'restrictions',
 		'source',
 		'lastModifiedDate',
-		'lastOpenedDate'
+		'lastOpenedDate',
+		'timestamp'
 	],
 
 	relation: [
@@ -137,7 +139,7 @@ export default {
 		'targetSpaceId',
 		'creator',
 		'createdDate',
-		'spaceMainChatId'
+		'chatId',
 	],
 
 	participant: [

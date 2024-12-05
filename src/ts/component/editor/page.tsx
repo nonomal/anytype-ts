@@ -563,23 +563,30 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 		Preview.previewHide(true);
 		
 		const ids = selection.get(I.SelectType.Block);
+		const idsWithChildren = selection.get(I.SelectType.Block, true);
 		const cmd = keyboard.cmdKey();
 		const readonly = this.isReadonly();
 		const styleParam = this.getStyleParam();
 
+		let ret = false;
+
 		// Select all
-		keyboard.shortcut(`${cmd}+a`, e, (pressed: string) => {
+		keyboard.shortcut(`${cmd}+a`, e, () => {
 			if (popupOpen || menuOpen) {
 				return;
 			};
 
 			e.preventDefault();
 			this.onSelectAll();
+
+			ret = true;
 		});
 
 		// Copy/Cut
 		keyboard.shortcut(`${cmd}+c, ${cmd}+x`, e, (pressed: string) => {
 			this.onCopy(e, pressed.match('x') ? true : false);
+
+			ret = true;
 		});
 
 		// Undo
@@ -588,6 +595,8 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 				e.preventDefault();
 				keyboard.onUndo(rootId, 'editor');
 			};
+
+			ret = true;
 		});
 
 		// Redo
@@ -596,26 +605,26 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 				e.preventDefault();
 				keyboard.onRedo(rootId, 'editor');
 			};
+
+			ret = true;
 		});
 
 		// History
 		keyboard.shortcut('ctrl+h, cmd+y', e, (pressed: string) => {
 			e.preventDefault();
 			this.onHistory(e);
+
+			ret = true;
 		});
 
 		// Expand selection
 		keyboard.shortcut('shift+arrowup, shift+arrowdown', e, (pressed: string) => {
 			this.onShiftArrowEditor(e, pressed);
+
+			ret = true;
 		});
 
-		if (ids.length) {
-			keyboard.shortcut('escape', e, () => {
-				if (!menuOpen) {
-					selection.clear();
-				};
-			});
-
+		if (idsWithChildren.length) {
 			// Mark-up
 
 			let type = null;
@@ -625,6 +634,8 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 				keyboard.shortcut(item.key, e, () => {
 					type = item.type;
 					param = item.param;
+
+					ret = true;
 				});
 			};
 
@@ -638,18 +649,28 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 						data: {
 							filter: '',
 							onChange: (newType: I.MarkType, param: string) => {
-								C.BlockTextListSetMark(rootId, ids, { type: newType, param, range: { from: 0, to: 0 } }, () => {
-									analytics.event('ChangeTextStyle', { type: newType, count: ids.length });
+								C.BlockTextListSetMark(rootId, idsWithChildren, { type: newType, param, range: { from: 0, to: 0 } }, () => {
+									analytics.event('ChangeTextStyle', { type: newType, count: idsWithChildren.length });
 								});
-							}
-						}
+							},
+						},
 					});
 				} else {
-					C.BlockTextListSetMark(rootId, ids, { type, param, range: { from: 0, to: 0 } }, () => {
-						analytics.event('ChangeTextStyle', { type, count: ids.length });
+					C.BlockTextListSetMark(rootId, idsWithChildren, { type, param, range: { from: 0, to: 0 } }, () => {
+						analytics.event('ChangeTextStyle', { type, count: idsWithChildren.length });
 					});
 				};
 			};
+		};
+
+		if (ids.length) {
+			keyboard.shortcut('escape', e, () => {
+				if (!menuOpen) {
+					selection.clear();
+				};
+
+				ret = true;
+			});
 
 			// Duplicate
 			keyboard.shortcut(`${cmd}+d`, e, () => {
@@ -659,6 +680,8 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 
 				e.preventDefault();
 				Action.duplicate(rootId, rootId, ids[ids.length - 1], ids, I.BlockPosition.Bottom, () => focus.clear(true));
+
+				ret = true;
 			});
 
 			for (const item of styleParam) {
@@ -666,6 +689,8 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 
 				keyboard.shortcut(item.key, e, () => {
 					style = item.style;
+
+					ret = true;
 				});
 
 				if (style !== null) {
@@ -691,11 +716,15 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 						}
 					});
 				});
+
+				ret = true;
 			});
 
 			// Move blocks with arrows
 			keyboard.shortcut(`${cmd}+shift+arrowup, ${cmd}+shift+arrowdown`, e, (pressed: string) => {
 				this.onCtrlShiftArrowEditor(e, pressed);
+
+				ret = true;
 			});
 		};
 
@@ -705,11 +734,15 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 				e.preventDefault();
 				this.blockRemove();
 			};
+
+			ret = true;
 		});
 
 		// Indent block
 		keyboard.shortcut('tab, shift+tab', e, (pressed: string) => {
 			this.onTabEditor(e, ids, pressed);
+
+			ret = true;
 		});
 
 		// Restore focus
@@ -721,6 +754,8 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 			selection.clear();
 			focus.restore();
 			focus.apply();
+
+			ret = true;
 		});
 
 		// Enter
@@ -737,7 +772,26 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 				type: I.BlockType.Text,
 				style: I.TextStyle.Paragraph,
 			});
+
+			ret = true;
 		});
+
+		if (!ret && ids.length && !keyboard.isSpecial(e)) {
+			this.blockCreate(ids[ids.length - 1] , I.BlockPosition.Bottom, {
+				type: I.BlockType.Text,
+				style: I.TextStyle.Paragraph,
+			}, (blockId: string) => {
+				const key = e.key;
+
+				C.BlockListDelete(rootId, ids);
+				U.Data.blockSetText(rootId, blockId, key, [], true, () => {
+					const block = S.Block.getLeaf(rootId, blockId);
+					const length = block.getLength();
+
+					window.setTimeout(() => this.focus(blockId, length, length, true));
+				});
+			});
+		};
 	};
 
 	onKeyDownBlock (e: any, text: string, marks: I.Mark[], range: any, props: any) {
@@ -1378,6 +1432,7 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 			return;
 		};
 
+		const isShift = !!pressed.match('shift');
 		const length = block.getLength();
 		const parent = S.Block.getParentLeaf(rootId, block.id);
 		const replace = !range.to && (block.isTextList() || parent?.isTextToggle()) && !length;
@@ -1388,7 +1443,7 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 		if (!block.isText() && keyboard.isFocused) {
 			return;
 		};
-		if (block.isText() && !block.isTextCode() && pressed.match('shift')) {
+		if (block.isText() && !(block.isTextCode() || block.isTextCallout() || block.isTextQuote()) && isShift) {
 			return;
 		};
 
@@ -1414,7 +1469,7 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 				style: I.TextStyle.Paragraph,
 			});
 		} else {
-			this.blockSplit(block, range);
+			this.blockSplit(block, range, isShift);
 		};
 	};
 
@@ -2076,12 +2131,13 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 		};
 	};
 	
-	blockSplit (focused: I.Block, range: I.TextRange) {
+	blockSplit (focused: I.Block, range: I.TextRange, isShift: boolean) {
 		const { rootId } = this.props;
 		const { content } = focused;
 		const isTitle = focused.isTextTitle();
 		const isToggle = focused.isTextToggle();
 		const isCallout = focused.isTextCallout();
+		const isQuote = focused.isTextQuote();
 		const isList = focused.isTextList();
 		const isCode = focused.isTextCode();
 		const isOpen = Storage.checkToggle(rootId, focused.id);
@@ -2107,7 +2163,7 @@ const EditorPage = observer(class EditorPage extends React.Component<Props, Stat
 			mode = I.BlockSplitMode.Top;
 		};
 
-		if (isCallout) {
+		if ((isCallout || isQuote) && !isShift) {
 			mode = I.BlockSplitMode.Inner;
 			style = I.TextStyle.Paragraph;
 		};

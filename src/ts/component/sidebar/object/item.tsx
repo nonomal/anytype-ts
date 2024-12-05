@@ -19,7 +19,7 @@ const ObjectItem = observer(class ObjectItem extends React.Component<Props> {
 	
 	node = null;
 
-    render() {
+	render() {
 		const { item, style, compact, onClick, onContext, onMouseEnter, onMouseLeave } = this.props;
 		const cn = [ 'item', U.Data.layoutClass(item.id, item.layout) ];
 		const type = S.Record.getTypeById(item.type);
@@ -97,7 +97,7 @@ const ObjectItem = observer(class ObjectItem extends React.Component<Props> {
 				{content}
 			</div>
 		);
-    };
+	};
 
 	componentDidMount () {
 		this.resize();
@@ -110,8 +110,8 @@ const ObjectItem = observer(class ObjectItem extends React.Component<Props> {
 	resize () {
 		const node = $(this.node);
 
-		node.find('.iconObject').length ? node.addClass('withIcon') : node.removeClass('withIcon');
-		node.find('.descr').length ? node.addClass('withDescr') : node.removeClass('withDescr');
+		node.toggleClass('withIcon', !!node.find('.iconObject').length);
+		node.toggleClass('withDescr', !!node.find('.descr').length);
 	};
 
 });

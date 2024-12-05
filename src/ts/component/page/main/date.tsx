@@ -1,0 +1,319 @@
+import * as React from 'react';
+import { observer } from 'mobx-react';
+import { Header, Footer, Deleted, ListObject, Button } from 'Component';
+import { I, C, S, U, J, Action, translate, analytics } from 'Lib';
+import HeadSimple from 'Component/page/elements/head/simple';
+import { eachDayOfInterval, isEqual, format, fromUnixTime } from 'date-fns';
+
+interface State {
+	isDeleted: boolean;
+	relations: any[];
+	relationKey: string;
+};
+
+const SUB_ID = 'dateListObject';
+const RELATION_KEY_MENTION = 'mentions';
+
+const PageMainDate = observer(class PageMainDate extends React.Component<I.PageComponent, State> {
+
+	_isMounted = false;
+	node: any = null;
+	id = '';
+	refHeader: any = null;
+	refHead: any = null;
+	refList: any = null;
+	refCalIcon: any = null;
+	loading = false;
+	timeout = 0;
+
+	state = {
+		isDeleted: false,
+		relations: [],
+		relationKey: RELATION_KEY_MENTION,
+	};
+
+	render () {
+		const { space } = S.Common;
+		const { isDeleted, relations, relationKey } = this.state;
+		const rootId = this.getRootId();
+		const object = S.Detail.get(rootId, rootId, []);
+
+		if (isDeleted) {
+			return <Deleted {...this.props} />;
+		};
+
+		const relation = S.Record.getRelationByKey(relationKey);
+		if (!relation) {
+			return null;
+		};
+
+		const columns: any[] = [
+			{ relationKey: 'type', name: translate('commonObjectType'), isObject: true },
+			{ relationKey: 'creator', name: translate('relationCreator'), isObject: true },
+		];
+		const keys = relations.map(it => it.relationKey);
+
+		const filters: I.Filter[] = [];
+
+		if (relation.format == I.RelationType.Object) {
+			filters.push({ relationKey: RELATION_KEY_MENTION, condition: I.FilterCondition.In, value: [ object.id ] });
+		} else {
+			filters.push({ relationKey: relationKey, condition: I.FilterCondition.Equal, value: object.timestamp, format: I.RelationType.Date });
+		};
+
+		if ([ 'createdDate' ].includes(relationKey)) {
+			const map = {
+				createdDate: 'creator',
+			};
+
+			filters.push({ relationKey: map[relationKey], condition: I.FilterCondition.NotEqual, value: J.Constant.anytypeProfileId });
+			keys.push(map[relationKey]);
+		};
+
+		return (
+			<div ref={node => this.node = node}>
+				<Header 
+					{...this.props} 
+					component="mainObject" 
+					ref={ref => this.refHeader = ref} 
+					rootId={rootId} 
+				/>
+
+				<div className="blocks wrapper">
+					<HeadSimple 
+						{...this.props} 
+						noIcon={true}
+						ref={ref => this.refHead = ref} 
+						rootId={rootId} 
+						readonly={true}
+						getDotMap={this.getDotMap}
+					/>
+					{!object._empty_ ? (
+						<React.Fragment>
+							<div className="categories">
+								{relations.map((item) => {
+									const isMention = item.relationKey == RELATION_KEY_MENTION;
+									const icon = isMention ? 'mention' : '';
+
+									return (
+										<Button
+											id={`category-${item.relationKey}`}
+											active={relationKey == item.relationKey}
+											color="blank"
+											className="c36"
+											onClick={() => this.onCategoryClick(item.relationKey)}
+											icon={icon}
+											text={item.name}
+										/>
+									);
+								})}
+							</div>
+
+							<ListObject 
+								ref={ref => this.refList = ref}
+								{...this.props}
+								spaceId={space}
+								subId={SUB_ID} 
+								rootId={rootId}
+								columns={columns}
+								filters={filters}
+								route={analytics.route.screenDate}
+								relationKeys={keys}
+							/>
+						</React.Fragment>
+					) : ''}
+				</div>
+
+				<Footer component="mainObject" {...this.props} />
+			</div>
+		);
+	};
+
+	getFilters = (start: number, end: number): I.Filter[] => {
+		const { relationKey } = this.state;
+
+		if (!relationKey) {
+			return [];
+		};
+
+		return [
+
+			{
+				relationKey,
+				condition: I.FilterCondition.GreaterOrEqual,
+				value: start,
+				quickOption: I.FilterQuickOption.ExactDate,
+				format: I.RelationType.Date,
+			},
+			{
+				relationKey,
+				condition: I.FilterCondition.LessOrEqual,
+				value: end,
+				quickOption: I.FilterQuickOption.ExactDate,
+				format: I.RelationType.Date,
+			}
+		];
+	};
+
+	getDotMap = (start: number, end: number, callBack: (res: Map<string, boolean>) => void): void => {
+		const { relationKey } = this.state;
+		const res = new Map();
+
+		if (!relationKey) {
+			callBack(res);
+			return;
+		};
+
+		U.Data.search({
+			filters: this.getFilters(start, end),
+			keys: [ relationKey ],
+		}, (message: any) => {
+			eachDayOfInterval({
+				start: fromUnixTime(start),
+				end: fromUnixTime(end)
+			}).forEach(date => {
+				if (message.records.find(rec => isEqual(date, fromUnixTime(rec[relationKey]).setHours(0, 0, 0, 0)))) {
+					res.set(format(date, 'dd-MM-yyyy'), true);
+				};
+			});
+
+			callBack(res);
+		});
+	};
+
+	componentDidMount () {
+		this._isMounted = true;
+		this.open();
+	};
+
+	componentDidUpdate () {
+		this.open();
+		this.checkDeleted();
+	};
+
+	componentWillUnmount () {
+		this._isMounted = false;
+		this.close();
+	};
+
+	checkDeleted () {
+		const { isDeleted } = this.state;
+		if (isDeleted) {
+			return;
+		};
+
+		const rootId = this.getRootId();
+		const object = S.Detail.get(rootId, rootId, []);
+
+		if (object.isDeleted) {
+			this.setState({ isDeleted: true });
+		};
+	};
+
+	open () {
+		const rootId = this.getRootId();
+
+		if (this.id == rootId) {
+			return;
+		};
+
+		this.close();
+		this.id = rootId;
+		this.setState({ isDeleted: false });
+
+		C.ObjectOpen(rootId, '', U.Router.getRouteSpaceId(), (message: any) => {
+			if (!U.Common.checkErrorOnOpen(rootId, message.error.code, this)) {
+				return;
+			};
+
+			const object = S.Detail.get(rootId, rootId, []);
+			if (object.isDeleted) {
+				this.setState({ isDeleted: true });
+				return;
+			};
+
+			this.refHeader?.forceUpdate();
+			this.refHead?.forceUpdate();
+
+			this.loadCategory();
+		});
+	};
+
+	close () {
+		if (!this.id) {
+			return;
+		};
+
+		const { isPopup, match } = this.props;
+		
+		let close = true;
+		if (isPopup && (match.params.id == this.id)) {
+			close = false;
+		};
+		if (close) {
+			Action.pageClose(this.id, true);
+		};
+	};
+
+	loadCategory () {
+        const { space, config } = S.Common;
+		const { relationKey } = this.state;
+        const rootId = this.getRootId();
+
+        C.RelationListWithValue(space, rootId, (message: any) => {
+            const relations = (message.relations || []).map(it => S.Record.getRelationByKey(it.relationKey)).filter(it => {
+                if ([ RELATION_KEY_MENTION ].includes(it.relationKey)) {
+                    return true;
+                };
+
+                if ([ 'links', 'backlinks' ].includes(it.relationKey)) {
+                    return false;
+                };
+
+                return config.debug.hidden ? true : !it.isHidden;
+            });
+
+            relations.sort((c1, c2) => {
+                const isMention1 = c1.relationKey == RELATION_KEY_MENTION;
+                const isMention2 = c2.relationKey == RELATION_KEY_MENTION;
+
+                if (isMention1 && !isMention2) return -1;
+                if (!isMention1 && isMention2) return 1;
+                return 0;
+            });
+
+			if (relations.length) {
+				this.setState({ relations });
+
+				if (!relationKey || !relations.find(it => it.relationKey == relationKey)) {
+					this.onCategory(relations[0].relationKey);
+				} else {
+					this.reload();
+				};
+			} else {
+				this.reload();
+			};
+        });
+    };
+
+	onCategory (relationKey: string) {
+		this.setState({ relationKey }, () => this.reload());
+	};
+
+	onCategoryClick (relationKey: string) {
+		this.onCategory(relationKey);
+		analytics.event('SwitchRelationDate', { relationKey });
+	};
+
+	reload () {
+		this.refList?.getData(1);
+	};
+
+	getRootId () {
+		const { rootId, match } = this.props;
+		return rootId ? rootId : match.params.id;
+	};
+
+});
+
+export default PageMainDate;

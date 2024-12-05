@@ -47,6 +47,7 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 	};
 
 	render () {
+		const { showRelativeDates } = S.Common;
 		const { threadId } = this.state;
 		const rootId = this.getRootId();
 		const blockId = this.getBlockId();
@@ -57,10 +58,8 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 		const lastId = Storage.getChat(rootId).lastId;
 
 		const Section = (item: any) => {
-			let date = U.Date.dayString(item.createdAt);
-			if (!date) {
-				date = U.Date.dateWithFormat(I.DateFormat.MonthAbbrAfterDay, item.createdAt);
-			};
+			const day = showRelativeDates ? U.Date.dayString(item.createdAt) : null;
+			const date = day ? day : U.Date.dateWithFormat(S.Common.dateFormat, item.createdAt);
 
 			return (
 				<div className="section">
@@ -81,7 +80,8 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 							onThread={this.onThread}
 							onContextMenu={e => this.onContextMenu(e, item)}
 							onMore={e => this.onContextMenu(e, item, true)}
-							onReply={e => this.onReply(e, item)}
+							onReplyEdit={e => this.onReplyEdit(e, item)}
+							onReplyClick={e => this.onReplyClick(e, item)}
 							getReplyContent={this.getReplyContent}
 						/>
 					))}
@@ -209,6 +209,10 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 		const rootId = this.getRootId();
 		const list = this.getMessages();
 
+		if (!rootId) {
+			return;
+		};
+
 		if (clear) {
 			C.ChatSubscribeLastMessages(rootId, J.Constant.limit.chat.messages, (message: any) => {
 				if (!message.error.code) {
@@ -292,6 +296,9 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 			noDeps: true,
 			keys: U.Data.chatRelationKeys(),
 		}, (message: any) => {
+			if (message.error.code) {
+				return;
+			};
 			message.records.forEach(it => S.Detail.update(rootId, { id: it.id, details: it }, false));
 
 			if (callBack) {
@@ -328,7 +335,7 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 		const { rootId } = this.props;
 		const object = S.Detail.get(rootId, rootId, [ 'chatId' ]);
 
-		return object.chatId || rootId;
+		return object.chatId;
 	};
 
 	getBlockId () {
@@ -375,8 +382,8 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 		});
 
 		sections.sort((c1, c2) => {
-			if (c1.time > c2.time) return 1;
-			if (c1.time < c2.time) return -1;
+			if (c1.createdAt > c2.createdAt) return 1;
+			if (c1.createdAt < c2.createdAt) return -1;
 			return 0;
 		});
 
@@ -529,8 +536,28 @@ const BlockChat = observer(class BlockChat extends React.Component<I.BlockCompon
 		});
 	};
 
-	onReply (e: React.MouseEvent, message: any) {
+	onReplyEdit (e: React.MouseEvent, message: any) {
 		this.refForm.onReply(message);
+	};
+
+	onReplyClick (e: React.MouseEvent, message: any) {
+		if (!S.Common.config.experimental) {
+			return;
+		};
+
+		const rootId = this.getRootId();
+		const reply = S.Chat.getReply(rootId, message.replyToMessageId);
+		const limit = Math.ceil(J.Constant.limit.chat.messages / 2);
+
+		let messages = [];
+
+		C.ChatGetMessages(rootId, reply.orderId, limit, (message: any) => {
+			if (!message.error.code && message.messages.length) {
+				messages = messages.concat(message.messages);
+			};
+
+			S.Chat.set(rootId, messages);
+		});
 	};
 
 	getReplyContent (message: any): any {

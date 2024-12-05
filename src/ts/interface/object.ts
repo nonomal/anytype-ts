@@ -20,8 +20,8 @@ export enum ObjectLayout {
 	SpaceView	 = 18,
 	Participant	 = 19,
 	Pdf			 = 20,
-	Chat		 = 21,
-	ChatDerived	 = 22,
+	ChatOld		 = 21,
+	Chat		 = 22,
 
 	Empty		 = 100,
 	Navigation	 = 101,
@@ -59,7 +59,7 @@ export enum RelationScope {
 export enum ObjectFlag {
 	DeleteEmpty		 = 0,
 	SelectType		 = 1,
-    SelectTemplate	 = 2,
+	SelectTemplate	 = 2,
 };
 
 export enum ObjectOrigin {

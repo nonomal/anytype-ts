@@ -1,9 +1,9 @@
 const { app, shell, Menu, Tray } = require('electron');
 const { is } = require('electron-util');
+const fs = require('fs');
 const path = require('path');
 const ConfigManager = require('./config.js');
 const Util = require('./util.js');
-
 const Separator = { type: 'separator' };
 
 class MenuManager {
@@ -21,6 +21,7 @@ class MenuManager {
 		const Api = require('./api.js');
 		const WindowManager = require('./window.js');
 		const UpdateManager = require('./update.js');
+		const isAllowedUpdate = UpdateManager.isAllowed();
 
 		config.debug = config.debug || {};
 		config.flagsMw = config.flagsMw || {};
@@ -37,9 +38,8 @@ class MenuManager {
 					{ role: 'hideothers', label: Util.translate('electronMenuHideOthers') },
 					{ role: 'unhide', label: Util.translate('electronMenuUnhide') },
 
-					Separator,
-
-					{ label: Util.translate('electronMenuCheckUpdates'), click: () => Api.updateCheck(this.win) },
+					{ type: 'separator', visible: isAllowedUpdate },
+					{ label: Util.translate('electronMenuCheckUpdates'), click: () => Api.updateCheck(this.win), visible: isAllowedUpdate },
 
 					Separator,
 
@@ -71,6 +71,21 @@ class MenuManager {
 							{ label: Util.translate('electronMenuConfigDirectory'), click: () => shell.openPath(Util.defaultUserDataPath()) },
 							{ label: Util.translate('electronMenuLogsDirectory'), click: () => shell.openPath(Util.logPath()) },
 						] 
+					},
+
+					Separator,
+
+					{ 
+						label: Util.translate('electronMenuCustomCss'),
+						click: () => {
+							const fp = path.join(Util.userPath(), 'custom.css');
+
+							if (!fs.existsSync(fp)) {
+								fs.writeFileSync(fp, '');
+							};
+
+							shell.openPath(fp);
+						},
 					},
 
 					Separator,
@@ -200,7 +215,7 @@ class MenuManager {
 					config.debug[i] = !config.debug[i];
 					Api.setConfig(this.win, { debug: config.debug });
 					
-					if ([ 'ho' ].includes(i)) {
+					if ([ 'hiddenObject' ].includes(i)) {
 						this.win.reload();
 					};
 				}
@@ -235,6 +250,7 @@ class MenuManager {
 				{ label: Util.translate('electronMenuDebugProcess'), click: () => Util.send(this.win, 'commandGlobal', 'debugProcess') },
 				{ label: Util.translate('electronMenuDebugStat'), click: () => Util.send(this.win, 'commandGlobal', 'debugStat') },
 				{ label: Util.translate('electronMenuDebugReconcile'), click: () => Util.send(this.win, 'commandGlobal', 'debugReconcile') },
+				{ label: Util.translate('electronMenuDebugNet'), click: () => Util.send(this.win, 'commandGlobal', 'debugNet') },
 
 				Separator,
 
@@ -307,6 +323,8 @@ class MenuManager {
 		const { config } = ConfigManager;
 		const WindowManager = require('./window.js');
 		const Api = require('./api.js');
+		const UpdateManager = require('./update.js');
+		const isAllowedUpdate = UpdateManager.isAllowed();
 
 		this.destroy();
 
@@ -325,7 +343,7 @@ class MenuManager {
 
 			Separator,
 
-			{ label: Util.translate('electronMenuCheckUpdates'), click: () => { this.winShow(); Api.updateCheck(this.win); } },
+			{ label: Util.translate('electronMenuCheckUpdates'), click: () => { this.winShow(); Api.updateCheck(this.win); }, visible: isAllowedUpdate },
 			{ label: Util.translate('commonSettings'), submenu: this.menuSettings() },
 			
 			Separator,

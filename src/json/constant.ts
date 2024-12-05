@@ -25,6 +25,10 @@ export default {
 		testing:		 'N4N1wDHFpFpovXBqdbq2TDXE9tXdXbtV1eTJFpKJW4YeaJqR'
 	},
 
+	chatSpaceId: [
+		'bafyreiezhzb4ggnhjwejmh67pd5grilk6jn3jt7y2rnfpbkjwekilreola.1t123w9f2lgn5',
+	],
+
 	platforms: {
 		win32:			 'Windows',
 		darwin:			 'Mac',
@@ -39,7 +43,7 @@ export default {
 		graphDepth:		 5,
 
 		chat: {
-			messages:		 100,
+			messages:		 30,
 			attachments:	 10,
 			files:			 10,
 			mentions:		 10,
@@ -127,7 +131,6 @@ export default {
 		date:			 'ot-date',
 		profile:		 'ot-profile',
 		chat:			 'ot-chat',
-		chatDerived:	 'ot-chatDerived',
 	},
 
 	templateId: {

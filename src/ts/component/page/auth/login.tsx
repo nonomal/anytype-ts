@@ -32,7 +32,7 @@ const PageAuthLogin = observer(class PageAuthLogin extends React.Component<I.Pag
 		const { accounts } = S.Auth;
 		const length = accounts.length;
 		
-        return (
+		return (
 			<div ref={ref => this.node = ref}>
 				<Header {...this.props} component="authIndex" />
 				<Icon className="arrow back" onClick={this.onCancel} />
@@ -117,6 +117,7 @@ const PageAuthLogin = observer(class PageAuthLogin extends React.Component<I.Pag
 
 		const { mode, path } = networkConfig;
 		const account = accounts[0];
+		const { shareTooltip } = S.Common;
 
 		S.Auth.accountSet(account);
 		Renderer.send('keytarSet', account.id, this.refPhrase.getValue());
@@ -131,12 +132,12 @@ const PageAuthLogin = observer(class PageAuthLogin extends React.Component<I.Pag
 			S.Common.configSet(message.account.config, false);
 
 			const spaceId = Storage.get('spaceId');
-			const shareTooltip = Storage.get('shareTooltip');
 			const routeParam = {
 				replace: true, 
 				onRouteChange: () => {
 					if (!shareTooltip) {
-						Preview.shareTooltipShow();
+						S.Common.shareTooltipSet(false);
+						analytics.event('OnboardingTooltip', { id: 'ShareApp' });
 					};
 				},
 			};
@@ -196,14 +197,14 @@ const PageAuthLogin = observer(class PageAuthLogin extends React.Component<I.Pag
 
 		S.Popup.open('confirm', {
 			className: 'lostPhrase isLeft',
-            data: {
+			data: {
 				title: translate('popupConfirmLostPhraseTitle'),
-                text: translate(`popupConfirmLostPhraseText${platform}`),
+				text: translate(`popupConfirmLostPhraseText${platform}`),
 				textConfirm: translate('commonOkay'),
 				canConfirm: true,
 				canCancel: false,
-            },
-        });
+			},
+		});
 	};
 
 });

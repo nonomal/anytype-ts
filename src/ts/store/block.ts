@@ -4,44 +4,49 @@ import { I, M, S, U, J, Storage, Mark, translate, keyboard } from 'Lib';
 
 class BlockStore {
 
-    public profileId = '';
+	public profileId = '';
 	public widgetsId = '';
 	public rootId = '';
 	public spaceviewId = '';
+	public workspaceId = '';
 
-    public treeMap: Map<string, Map<string, I.BlockStructure>> = new Map();
-    public blockMap: Map<string, Map<string, I.Block>> = new Map();
-    public restrictionMap: Map<string, Map<string, any>> = new Map();
+	public treeMap: Map<string, Map<string, I.BlockStructure>> = new Map();
+	public blockMap: Map<string, Map<string, I.Block>> = new Map();
+	public restrictionMap: Map<string, Map<string, any>> = new Map();
 	public participantMap: Map<string, Map<string, string>> = new Map();
 
-    constructor() {
-        makeObservable(this, {
+	constructor() {
+		makeObservable(this, {
 			rootId: observable,
-            profileId: observable,
+			profileId: observable,
 			spaceviewId: observable,
 			widgetsId: observable,
+			workspaceId: observable,
 
-            profile: computed,
+			profile: computed,
 			root: computed,
 			spaceview: computed,
 			widgets: computed,
+			workspace: computed,
 
 			rootSet: action,
-            profileSet: action,
-            widgetsSet: action,
+			profileSet: action,
+			widgetsSet: action,
 			spaceviewSet: action,
-            set: action,
-            clear: action,
-            clearAll: action,
-            add: action,
-            update: action,
-			updateContent: action,
-            updateStructure: action,
-            delete: action,
-        });
-    };
+			workspaceSet: action,
 
-    get profile (): string {
+			set: action,
+			clear: action,
+			clearAll: action,
+			add: action,
+			update: action,
+			updateContent: action,
+			updateStructure: action,
+			delete: action,
+		});
+	};
+
+	get profile (): string {
 		return String(this.profileId || '');
 	};
 
@@ -55,6 +60,10 @@ class BlockStore {
 
 	get spaceview (): string {
 		return String(this.spaceviewId || '');
+	};
+
+	get workspace (): string {
+		return String(this.workspaceId || '');
 	};
 
 	profileSet (id: string) {
@@ -72,8 +81,12 @@ class BlockStore {
 	spaceviewSet (id: string) {
 		this.spaceviewId = String(id || '');
 	};
+
+	workspaceSet (id: string) {
+		this.workspaceId = String(id || '');
+	};
 	
-    set (rootId: string, blocks: I.Block[]) {
+	set (rootId: string, blocks: I.Block[]) {
 		const map: Map<string, I.Block> = new Map();
 		
 		blocks.forEach((it: I.Block) => {
@@ -83,14 +96,14 @@ class BlockStore {
 		this.blockMap.set(rootId, map);
 	};
 
-    add (rootId: string, block: I.Block) {
+	add (rootId: string, block: I.Block) {
 		const map = this.blockMap.get(rootId);
 		if (map) {
 			map.set(block.id, block);
 		};
 	};
 
-    update (rootId: string, blockId: string, param: any) {
+	update (rootId: string, blockId: string, param: any) {
 		const block = this.getLeaf(rootId, blockId);
 		if (!block) {
 			return;
@@ -113,7 +126,7 @@ class BlockStore {
 		this.participantMap.delete(rootId);
 	};
 
-    clearAll () {
+	clearAll () {
 		this.profileSet('');
 		this.widgetsSet('');
 		this.rootSet('');
@@ -142,7 +155,7 @@ class BlockStore {
 		};
 	};
 
-    updateStructure (rootId: string, blockId: string, childrenIds: string[]) {
+	updateStructure (rootId: string, blockId: string, childrenIds: string[]) {
 		const element = this.getMapElement(rootId, blockId);
 		if (!element) {
 			const map = this.getMap(rootId);
@@ -166,7 +179,7 @@ class BlockStore {
 		};
 	};
 
-    delete (rootId: string, id: string) {
+	delete (rootId: string, id: string) {
 		const blocks = this.getBlocks(rootId);
 		const map = this.getMap(rootId);
 
@@ -174,7 +187,7 @@ class BlockStore {
 		map.delete(id);
 	};
 
-    restrictionsSet (rootId: string, restrictions: any) {
+	restrictionsSet (rootId: string, restrictions: any) {
 		let map = this.restrictionMap.get(rootId);
 
 		if (!map) {
@@ -204,11 +217,11 @@ class BlockStore {
 		this.participantMap.set(rootId, map);
 	};
 
-    getMap (rootId: string) {
+	getMap (rootId: string) {
 		return this.treeMap.get(rootId) || new Map();
 	};
 
-    getMapElement (rootId: string, blockId: string): I.BlockStructure {
+	getMapElement (rootId: string, blockId: string): I.BlockStructure {
 		const map = this.getMap(rootId);
 		return map ? map.get(blockId) : null;
 	};
@@ -228,7 +241,7 @@ class BlockStore {
 		return element ? this.getLeaf(rootId, element.parentId) : null;
 	};
 
-    getBlocks (rootId: string, filter?: (it: any) => boolean): I.Block[] {
+	getBlocks (rootId: string, filter?: (it: any) => boolean): I.Block[] {
 		const map = this.blockMap.get(rootId);
 		if (!map) {
 			return [];
@@ -238,19 +251,19 @@ class BlockStore {
 		return filter ? blocks.filter(it => filter(it)) : blocks;
 	};
 
-    getChildrenIds (rootId: string, blockId: string): string[] {
+	getChildrenIds (rootId: string, blockId: string): string[] {
 		const element = this.getMapElement(rootId, blockId);
 		return element ? (element.childrenIds || []) : [];
 	};
 
-    getChildren (rootId: string, blockId: string, filter?: (it: any) => boolean): I.Block[] {
+	getChildren (rootId: string, blockId: string, filter?: (it: any) => boolean): I.Block[] {
 		return this.getChildrenIds(rootId, blockId).map(id => this.getLeaf(rootId, id)).filter((it: any) => {
 			return it ? (filter ? filter(it) : true) : false;
 		});
 	};
 
-    // If check is present - find next block if check passes or continue to next block in "dir" direction, else just return next block;
-    getNextBlock (rootId: string, id: string, dir: number, check?: (item: I.Block) => any, list?: any): any {
+	// If check is present - find next block if check passes or continue to next block in "dir" direction, else just return next block;
+	getNextBlock (rootId: string, id: string, dir: number, check?: (item: I.Block) => any, list?: any): any {
 		if (!list) {
 			list = this.unwrapTree([ this.wrapTree(rootId, rootId) ]);
 		};
@@ -270,12 +283,12 @@ class BlockStore {
 		};
 	};
 
-    getFirstBlock (rootId: string, dir: number, check: (item: I.Block) => any): I.Block {
+	getFirstBlock (rootId: string, dir: number, check: (item: I.Block) => any): I.Block {
 		const list = this.unwrapTree([ this.wrapTree(rootId, rootId) ]).filter(check);
 		return dir > 0 ? list[0] : list[list.length - 1];
 	};
 
-    getHighestParent (rootId: string, blockId: string): I.Block {
+	getHighestParent (rootId: string, blockId: string): I.Block {
 		const block = this.getLeaf(rootId, blockId);
 		if (!block) {
 			return null;
@@ -339,7 +352,7 @@ class BlockStore {
 		return parent && parent.isTableRow();
 	};
 
-    updateNumbers (rootId: string) {
+	updateNumbers (rootId: string) {
 		const root = this.wrapTree(rootId, rootId);
 		if (!root) {
 			return;
@@ -393,7 +406,7 @@ class BlockStore {
 		cb(unwrap(tree));
 	};
 
-    getTree (rootId: string, list: any[]): any[] {
+	getTree (rootId: string, list: any[]): any[] {
 		list = U.Common.objectCopy(list || []);
 		for (const item of list) {
 			item.childBlocks = this.getTree(item.id, this.getChildren(rootId, item.id));
@@ -401,7 +414,7 @@ class BlockStore {
 		return list;
 	};
 
-    wrapTree (rootId: string, blockId: string) {
+	wrapTree (rootId: string, blockId: string) {
 		const map = this.getMap(rootId);
 		const ret: any = {};
 
@@ -416,7 +429,7 @@ class BlockStore {
 		return ret[blockId];
 	};
 
-    unwrapTree (tree: any[]): any[] {
+	unwrapTree (tree: any[]): any[] {
 		tree = (tree || []).filter(it => it);
 
 		let ret = [] as I.Block[];
@@ -445,7 +458,7 @@ class BlockStore {
 		return { childrenIds, columnContainer, columns, rowContainer, rows };
 	};
 
-    getRestrictions (rootId: string, blockId: string) {
+	getRestrictions (rootId: string, blockId: string) {
 		const map = this.restrictionMap.get(rootId);
 		if (!map) {
 			return [];
@@ -471,7 +484,7 @@ class BlockStore {
 		return this.isAllowed(this.getRestrictions(rootId, blockId), flags);
 	};
 
-    isAllowed (restrictions: any[], flags: any[]): boolean {
+	isAllowed (restrictions: any[], flags: any[]): boolean {
 		if (!U.Space.canMyParticipantWrite()) {
 			return false;
 		};
@@ -487,10 +500,10 @@ class BlockStore {
 		return true;
 	};
 
-    toggle (rootId: string, blockId: string, v: boolean) {
+	toggle (rootId: string, blockId: string, v: boolean) {
 		const element = $(`#block-${blockId}`);
 
-		v ? element.addClass('isToggled') : element.removeClass('isToggled');
+		element.toggleClass('isToggled', v);
 		Storage.setToggle(rootId, blockId, v);
 		
 		U.Common.triggerResizeEditor(keyboard.isPopup());
@@ -522,7 +535,7 @@ class BlockStore {
 				const { from, to } = mark.range;
 				const object = S.Detail.get(rootId, mark.param, [ 'name', 'layout', 'snippet', 'fileExt' ], true);
 
-				if (object._empty_) {
+				if (object._empty_ || U.Object.isDateLayout(object.layout)) {
 					continue;
 				};
 
@@ -572,8 +585,9 @@ class BlockStore {
 	checkBlockType (rootId: string) {
 		const { header, type } = J.Constant.blockId;
 		const element = this.getMapElement(rootId, header);
+		const canWrite = U.Space.canMyParticipantWrite();
 
-		if (!element) {
+		if (!element || !canWrite) {
 			return;
 		};
 
@@ -591,32 +605,6 @@ class BlockStore {
 	checkBlockTypeExists (rootId: string): boolean {
 		const header = this.getMapElement(rootId, J.Constant.blockId.header);
 		return header ? header.childrenIds.includes(J.Constant.blockId.type) : false;
-	};
-
-	checkBlockChat (rootId: string) {
-		return;
-
-		const element = this.getMapElement(rootId, rootId);
-
-		if (!element) {
-			return;
-		};
-
-		const object = S.Detail.get(rootId, rootId, [ 'layout', 'chatId' ], true);
-		if (U.Object.isChatLayout(object.layout)) {
-			return;
-		};
-
-		if (object.chatId && !this.checkBlockChatExists(rootId)) {
-			const childrenIds = element.childrenIds.concat(J.Constant.blockId.chat);
-
-			this.updateStructure(rootId, rootId, childrenIds);
-		};
-	};
-
-	checkBlockChatExists (rootId: string): boolean {
-		const element = this.getMapElement(rootId, rootId);
-		return element ? element.childrenIds.includes(J.Constant.blockId.chat) : false;
 	};
 
 	getLayoutIds (rootId: string, ids: string[]) {

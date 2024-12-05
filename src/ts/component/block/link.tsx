@@ -22,7 +22,7 @@ const BlockLink = observer(class BlockLink extends React.Component<I.BlockCompon
 
 	render() {
 		const { rootId, block } = this.props;
-		const object = S.Detail.get(rootId, block.getTargetObjectId(), J.Relation.cover);
+		const object = S.Detail.get(rootId, block.getTargetObjectId(), J.Relation.cover, false, [ I.ObjectLayout.Date ]);
 		const { _empty_, isArchived, isDeleted, done, layout, coverId, coverType, coverX, coverY, coverScale } = object;
 		const content = U.Data.checkLinkSettings(block.content, layout);
 		const readonly = this.props.readonly || !S.Block.isAllowed(object.restrictions, [ I.RestrictionObject.Details ]);
@@ -34,7 +34,7 @@ const BlockLink = observer(class BlockLink extends React.Component<I.BlockCompon
 		const canDescription = !U.Object.isNoteLayout(object.layout);
 		const withIcon = content.iconSize != I.LinkIconSize.None;
 		const withType = relations.includes('type');
-        const withCover = relations.includes('cover') && coverId && coverType;
+		const withCover = relations.includes('cover') && coverId && coverType;
 
 		if (U.Object.isTaskLayout(layout) && done) {
 			cn.push('isDone');
@@ -51,7 +51,7 @@ const BlockLink = observer(class BlockLink extends React.Component<I.BlockCompon
 					className="loading" 
 					{...U.Common.dataProps({ 'target-block-id': object.id })}
 				>
-					<Loader type="loader" />
+					<Loader type={I.LoaderType.Loader} />
 					<div className="name">{translate('blockLinkSyncing')}</div>
 				</div>
 			);
@@ -326,11 +326,9 @@ const BlockLink = observer(class BlockLink extends React.Component<I.BlockCompon
 			const { getWrapperWidth } = this.props;
 			const node = $(this.node);
 			const card = node.find('.linkCard');
-			const icon = node.find('.iconObject');
-			const mw = getWrapperWidth();
 
-			icon.length ? card.addClass('withIcon') : card.removeClass('withIcon');
-			node.width() <= mw / 2 ? card.addClass('isVertical') : card.removeClass('isVertical');
+			card.toggleClass('withIcon', !!node.find('.iconObject').length);
+			card.toggleClass('isVertical', node.width() <= getWrapperWidth() / 2);
 		});
 	};
 

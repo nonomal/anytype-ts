@@ -109,7 +109,7 @@ class UtilMenu {
 	};
 
 	getBlockObject () {
-		const items = U.Data.getObjectTypesForNewObject({ withSet: true, withCollection: true, withChat: true });
+		const items = U.Data.getObjectTypesForNewObject({ withSet: true, withCollection: true });
 		const ret: any[] = [
 			{ type: I.BlockType.Page, id: 'existingPage', icon: 'existing', lang: 'ExistingPage', arrow: true, aliases: [ 'link' ] },
 			{ type: I.BlockType.File, id: 'existingFile', icon: 'existing', lang: 'ExistingFile', arrow: true, aliases: [ 'file' ] }
@@ -409,7 +409,7 @@ class UtilMenu {
 			if (!isSystem) {
 				const isSet = U.Object.isInSetLayouts(layout);
 				const setLayouts = U.Object.getSetLayouts();
-				const treeSkipLayouts = setLayouts.concat(U.Object.getFileAndSystemLayouts()).concat([ I.ObjectLayout.Participant ]);
+				const treeSkipLayouts = setLayouts.concat(U.Object.getFileAndSystemLayouts()).concat([ I.ObjectLayout.Participant, I.ObjectLayout.Date ]);
 
 				// Sets can only become Link and List layouts, non-sets can't become List
 				if (treeSkipLayouts.includes(layout)) {
@@ -426,7 +426,6 @@ class UtilMenu {
 			if ([ 
 				J.Constant.widgetId.set, 
 				J.Constant.widgetId.collection,
-				J.Constant.widgetId.chat,
 			].includes(id)) {
 				options = options.filter(it => it != I.WidgetLayout.Tree);
 			};
@@ -852,10 +851,8 @@ class UtilMenu {
 	};
 
 	getFixedWidgets () {
-		const { config } = S.Common;
 		return [
 			{ id: J.Constant.widgetId.favorite, name: translate('widgetFavorite'), iconEmoji: '⭐' },
-			config.experimental ? { id: J.Constant.widgetId.chat, name: translate('widgetChat'), iconEmoji: '💬' } : null,
 			{ id: J.Constant.widgetId.set, name: translate('widgetSet'), iconEmoji: '🔍' },
 			{ id: J.Constant.widgetId.collection, name: translate('widgetCollection'), iconEmoji: '🗂️' },
 			{ id: J.Constant.widgetId.recentEdit, name: translate('widgetRecent'), iconEmoji: '📝' },
@@ -1045,6 +1042,9 @@ class UtilMenu {
 			{ id: I.DateFormat.Short },
 			{ id: I.DateFormat.ShortUS },
 			{ id: I.DateFormat.ISO },
+			{ id: I.DateFormat.Long },
+			{ id: I.DateFormat.Nordic },
+			{ id: I.DateFormat.European },
 		] as any[]).map(it => {
 			it.name = U.Date.dateWithFormat(it.id, U.Date.now());
 			return it;
@@ -1056,6 +1056,40 @@ class UtilMenu {
 			{ id: I.TimeFormat.H12, name: translate('menuDataviewDate12Hour') },
 			{ id: I.TimeFormat.H24, name: translate('menuDataviewDate24Hour') },
 		];
+	};
+
+	participant (object: any, param: Partial<I.MenuParam>) {
+		S.Menu.open('participant', {
+			className: 'fixed',
+			classNameWrap: 'fromPopup',
+			horizontal: I.MenuDirection.Center,
+			rect: { 
+				x: keyboard.mouse.page.x, 
+				y: keyboard.mouse.page.y + 10, 
+				width: 0, 
+				height: 0,
+			},
+			...param,
+			data: {
+				object,
+			}
+		});
+	};
+
+	getFormulaSections (relationKey: string) {
+		const relation = S.Record.getRelationByKey(relationKey);
+		const options = Relation.formulaByType(relationKey, relation.format);
+
+		return [
+			{ id: I.FormulaSection.None, name: translate('commonNone') },
+		].concat([
+			{ id: I.FormulaSection.Count, name: translate('formulaCount'), arrow: true },
+			{ id: I.FormulaSection.Percent, name: translate('formulaPercentage'), arrow: true },
+			{ id: I.FormulaSection.Math, name: translate('formulaMath'), arrow: true },
+			{ id: I.FormulaSection.Date, name: translate('formulaDate'), arrow: true },
+		].filter(s => {
+			return options.filter(it => it.section == s.id).length;
+		})).map(it => ({ ...it, id: String(it.id), checkbox: false }));
 	};
 
 };

@@ -9,7 +9,6 @@ interface Props {
 	layout?: I.ObjectLayout;
 	object?: any;
 	className?: string;
-	iconClass?: string;
 	canEdit?: boolean;
 	native?: boolean;
 	asImage?: boolean;
@@ -92,19 +91,19 @@ const FontSize = {
 	96: 64,
 };
 
-const DefaultIcons = [ 'page', 'task', 'set', 'chat', 'bookmark', 'type' ];
-const Ghost = require('img/icon/ghost.svg').default;
+const DefaultIcons = [ 'page', 'task', 'set', 'chat', 'bookmark', 'type', 'date' ];
+const Ghost = require('img/icon/ghost.svg');
 
 const CheckboxTask = {
 	'': {
-		0: require('img/icon/object/checkbox0.svg').default,
-		1: require('img/icon/object/checkbox1.svg').default,
-		2: require('img/icon/object/checkbox2.svg').default,
+		0: require('img/icon/object/checkbox0.svg'),
+		1: require('img/icon/object/checkbox1.svg'),
+		2: require('img/icon/object/checkbox2.svg'),
 	},
 	dark: {
-		0: require('img/icon/object/checkbox0.svg').default,
-		1: require('img/theme/dark/icon/object/checkbox1.svg').default,
-		2: require('img/icon/object/checkbox2.svg').default,
+		0: require('img/icon/object/checkbox0.svg'),
+		1: require('img/theme/dark/icon/object/checkbox1.svg'),
+		2: require('img/icon/object/checkbox2.svg'),
 	},
 };
 
@@ -135,7 +134,7 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 		const { theme } = S.Common;
 		const object = this.getObject();
 		const layout = Number(object.layout) || I.ObjectLayout.Page;
-		const { id, name, iconEmoji, iconImage, iconOption, iconClass, done, relationFormat, isDeleted } = object || {};
+		const { id, name, iconEmoji, iconImage, iconOption, done, relationFormat, isDeleted } = object || {};
 		const cn = [ 'iconObject', 'c' + size, U.Data.layoutClass(object.id, layout) ];
 		const iconSize = this.iconSize();
 		const tc = S.Common.getThemeClass();
@@ -162,31 +161,30 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 
 		switch (layout) {
 			default:
+			case I.ObjectLayout.Chat:
 			case I.ObjectLayout.Page: {
 				if (iconImage) {
 					cn.push('withImage');
 				};
 
-				if (iconEmoji || iconImage || iconClass) {
-					icon = <IconEmoji {...this.props} className={icn.join(' ')} iconClass={iconClass} size={iconSize} icon={iconEmoji} objectId={iconImage} />;
+				let di = 'page';
+				switch (layout) {
+					case I.ObjectLayout.Chat: di = 'chat'; break;
+					case I.ObjectLayout.Collection: 
+					case I.ObjectLayout.Set: di = 'set'; break;
+				};
+
+				if (iconEmoji || iconImage) {
+					icon = <IconEmoji {...this.props} className={icn.join(' ')} size={iconSize} icon={iconEmoji} objectId={iconImage} />;
 				} else {
-					defaultIcon('page');
+					defaultIcon(di);
 				};
 				break;
 			};
 
-			case I.ObjectLayout.Chat: {
-				if (iconImage) {
-					cn.push('withImage');
-				};
-
-				if (iconEmoji || iconImage || iconClass) {
-					icon = <IconEmoji {...this.props} className={icn.join(' ')} iconClass={iconClass} size={iconSize} icon={iconEmoji} objectId={iconImage} />;
-				} else {
-					defaultIcon('chat');
-				};
+			case I.ObjectLayout.Date:
+				defaultIcon('date');
 				break;
-			};
 
 			case I.ObjectLayout.Collection:
 			case I.ObjectLayout.Set: {
@@ -195,7 +193,7 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 				};
 
 				if (iconEmoji || iconImage) {
-					icon = <IconEmoji {...this.props} className={icn.join(' ')} iconClass={iconClass} size={iconSize} icon={iconEmoji} objectId={iconImage} />;
+					icon = <IconEmoji {...this.props} className={icn.join(' ')} size={iconSize} icon={iconEmoji} objectId={iconImage} />;
 				} else {
 					defaultIcon('set');
 				};
@@ -232,7 +230,7 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 
 			case I.ObjectLayout.Type: {
 				if (iconEmoji) {
-					icon = <IconEmoji {...this.props} className={icn.join(' ')} iconClass={iconClass} size={iconSize} icon={iconEmoji} objectId={iconImage} />;
+					icon = <IconEmoji {...this.props} className={icn.join(' ')} size={iconSize} icon={iconEmoji} objectId={iconImage} />;
 				} else {
 					defaultIcon('type');
 				};
@@ -244,10 +242,8 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 					break;
 				};
 
-				const src = require(`img/icon/relation/${Relation.typeName(relationFormat)}.svg`).default;
-
 				icn = icn.concat([ 'iconCommon', 'c' + iconSize ]);
-				icon = <img src={src} className={icn.join(' ')} />;
+				icon = <img src={`./img/icon/relation/${Relation.typeName(relationFormat)}.svg`} className={icn.join(' ')} />;
 				break;
 			};
 
@@ -268,7 +264,7 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 					icon = <img src={S.Common.imageUrl(id, iconSize * 2)} className={icn.join(' ')} />;
 				} else {
 					icn = icn.concat([ 'iconFile', 'c' + iconSize ]);
-					icon = <img src={U.File.iconImage(object)} className={icn.join(' ')} />;
+					icon = <img src={U.File.iconPath(object)} className={icn.join(' ')} />;
 				};
 				break;
 			};
@@ -278,7 +274,7 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 			case I.ObjectLayout.Pdf:
 			case I.ObjectLayout.File: {
 				icn = icn.concat([ 'iconFile', 'c' + iconSize ]);
-				icon = <img src={U.File.iconImage(object)} className={icn.join(' ')} />;
+				icon = <img src={U.File.iconPath(object)} className={icn.join(' ')} />;
 				break;
 			};
 
@@ -507,7 +503,7 @@ const IconObject = observer(class IconObject extends React.Component<Props> {
 	};
 
 	defaultIcon (type: string) {
-		return require(`img/icon/default/${type}.svg`).default;
+		return require(`img/icon/default/${type}.svg`);
 	};
 
 });

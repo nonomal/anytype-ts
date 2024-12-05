@@ -77,7 +77,7 @@ const PageAuthSetup = observer(class PageAuthSetup extends React.Component<I.Pag
 				</Frame>
 			</div>
 		);
-    };
+	};
 
 	componentDidMount () {
 		const { match } = this.props;
@@ -100,8 +100,6 @@ const PageAuthSetup = observer(class PageAuthSetup extends React.Component<I.Pag
 	};
 
 	componentDidUpdate (): void {
-		this.refFrame.resize();
-
 		Animation.to();
 	};
 	
